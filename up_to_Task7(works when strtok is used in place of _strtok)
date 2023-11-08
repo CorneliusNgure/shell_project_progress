@@ -1,0 +1,504 @@
+#ifndef SIMPLE_SHELL_H
+#define SIMPLE_SHELL_H
+
+#define BUFFER_SIZE 1024
+
+#include <unistd.h>
+#include <stdio.h>
+#include <string.h>
+#include <stdlib.h>
+#include <sys/wait.h>
+#include <stddef.h>
+
+void write_to_stdout(const char *outputText);
+char *readUserInput();
+char *_strdup(const char *src);
+char *_strncpy(char *dest, const char *src, int n);
+char *_strcpy(char *dest, const char *src);
+int _strlen(const char *s);
+char *_strcat(char *dest, char *src);
+void run_user_command(char *command);
+void exit_shell(void);
+void printCurrent_env_vars(void);
+char *custom_getline(void);
+char *get_env_path(char *command);
+const char *_strchr(const char *s, char c);
+int is_delimiter(char c, const char *delim);
+char *_strtok(char *str, const char *delim);
+
+#endif
+
+#include "simple_shell.h"
+
+/**
+ * _strchr - function to locate a char in a string.
+ * @s: pointer to the string.
+ * @c: the char to be located.
+ *
+ * Return: pointer to c or NULL;
+ */
+
+const char *_strchr(const char *s, char c)
+{
+	while (*s != '\0')
+	{
+		if (*s == c)
+		{
+			return (s);
+		}
+		s++;
+	}
+	return (NULL);
+}
+
+int is_delimiter(char c, const char *delim)
+{
+	while (*delim)
+	{
+		if (*delim == c)
+		{
+			return (1);
+		}
+		delim++;
+	}
+	return (0);
+}
+
+char *_strtok(char *str, const char *delim)
+{
+	static char *last_token = 0;
+	char *token;
+
+	if (str)
+	{
+		last_token = str;
+	}
+	else if (!last_token)
+		return (NULL);
+
+	while (*last_token && is_delimiter(*last_token, delim))
+	{
+		last_token++;
+	}
+
+	if (*last_token == '\0')
+	{
+		last_token = NULL;
+		return (NULL);
+	}
+
+	token = last_token;
+
+	while (*last_token && !is_delimiter(*last_token, delim))
+	{
+		last_token++;
+	}
+
+	if (*last_token == '\0')
+	{
+		last_token = NULL;
+	}
+	else
+	{
+		*last_token = '\0';
+		last_token++;
+	}
+
+	return (token);
+}
+
+/**
+ * custom_getline - reads characters from the stdin into a static buffer.
+ * Return: dynamically allocated string.
+ */
+
+char *custom_getline(void)
+{
+	static char buffer[BUFFER_SIZE];
+	int i = 0;
+	int c, length = 0;
+
+	while (1)
+	{
+		if (i >= length)
+		{
+			length = read(STDIN_FILENO, buffer, BUFFER_SIZE);
+			if (length == -1)
+			{
+				perror("read");
+				exit(EXIT_FAILURE);
+			}
+			else if (length == 0)
+				return (NULL);
+
+			i = 0;
+		}
+
+		c = buffer[i++];
+		if (c == '\n' || c == '\0')
+		{
+			buffer[--i] = '\0';
+
+			return (_strdup(buffer));
+		}
+	}
+}
+
+/**
+ * write_to_stdout - prints to the standard output.
+ * @outputText: message to be printed.
+ *
+ * Return: void.
+ */
+void write_to_stdout(const char *outputText)
+{
+	int output_length = strlen(outputText);
+	int bytes_written = write(STDOUT_FILENO, outputText, output_length);
+
+	if (bytes_written == -1)
+		perror("Write error");
+}
+#include "simple_shell.h"
+
+/**
+ * _strcat - concatenates two strings.
+ * @dest: string to be concatenated.
+ * @src: string to be concatenated.
+ *
+ * Return: dest.
+ */
+
+char *_strcat(char *dest, char *src)
+{
+	int i;
+	int j;
+
+	i = 0;
+	while (dest[i] != '\0')
+	{
+		i++;
+	}
+	j = 0;
+	while (src[j] != '\0')
+	{
+		dest[i] = src[j];
+		i++;
+		j++;
+	}
+
+	dest[i] = '\0';
+	return (dest);
+}
+
+/**
+ * _strdup - mimics the strdup function.
+ * @src: the string to be duplicated.
+ *
+ * Return: the duplicated string.
+ */
+
+char *_strdup(const char *src)
+{
+	char *dest = (char *)malloc(_strlen(src));
+
+	if (dest == NULL)
+	{
+		perror("malloc");
+		return (NULL);
+	}
+	_strncpy(dest, src, _strlen(src) + 1);
+
+	return (dest);
+}
+
+
+
+/**
+ * _strncpy - copies a string to another.
+ *
+ * @dest: the string to be copied to.
+ * @src: the string to be copied from.
+ * @n: the exact number of bytes to be copied.
+ *
+ * Return: pointer to the copied string (dest).
+ */
+
+char *_strncpy(char *dest, const char *src, int n)
+{
+	int count = 0;
+
+	while (count < n && src[count] != '\0')
+	{
+		dest[count] = src[count];
+		count++;
+	}
+
+	while (count < n)
+	{
+		dest[count] = '\0';
+		count++;
+	}
+
+	return (dest);
+}
+
+/**
+ * _strlen - returns the length of a string
+ * @s: string
+ * Return: length
+ */
+
+int _strlen(const char *s)
+{
+	int string_length = 0;
+
+	while (*s != '\0')
+	{
+		string_length++;
+		s++;
+	}
+
+	return (string_length);
+}
+
+/**
+ * readUserInput - reads the user input from stdin.
+ *
+ * Return: the user input string.
+ */
+
+char *readUserInput()
+{
+	char *userInput = custom_getline();
+
+	if (userInput != NULL && _strlen(userInput) > 0)
+	{
+		if (userInput[_strlen(userInput) - 1] == '\n')
+		{
+			userInput[_strlen(userInput) - 1] = '\0';
+		}
+	}
+
+	return (userInput);
+}
+#include "simple_shell.h"
+
+/**
+ * _strcpy - Copies a string from source to destination.
+ * @dest: The destination buffer.
+ * @src: The source string to be copied.
+ * Return: A pointer to the destination buffer.
+ */
+
+char *_strcpy(char *dest, const char *src)
+{
+	char *dest_start = dest;
+
+	while (*src)
+	{
+		*dest++ = *src++;
+	}
+
+	*dest = '\0';
+
+	return (dest_start);
+}
+
+/**
+ * run_user_command - executes the user input command.
+ * @input: the user command.
+ */
+
+void run_user_command(char *input)
+{
+	int status, i = 0;
+	pid_t pid;
+	char error_msg[] = "Command exited with error: ";
+	char *full_error_msg, *token = _strtok(input, " ");
+	char *args[BUFFER_SIZE], *exec_path;
+
+	if (token == NULL)
+		return;
+
+	while (token != NULL && i < BUFFER_SIZE - 1)
+	{
+		args[i] = token;
+		token = strtok(NULL, " ");
+		i++;
+	}
+	args[i] = NULL;
+
+	pid = fork();
+	if (pid == -1)
+	{
+		perror("fork()");
+		exit(EXIT_FAILURE);
+	}
+
+	if (pid == 0)
+	{
+		exec_path = get_env_path(args[0]);
+		if (exec_path != NULL)
+		{
+			if (execve(exec_path, args, NULL) == -1)
+			{
+				perror("execve");
+				exit(EXIT_FAILURE);
+			}
+		}
+		else
+		{
+			full_error_msg = malloc(_strlen(error_msg) + _strlen(args[0]) + 1);
+			if (full_error_msg == NULL)
+			{
+				perror("malloc");
+				exit(EXIT_FAILURE);
+			}
+			_strcpy(full_error_msg, error_msg);
+			_strcat(full_error_msg, args[0]);
+			write_to_stdout(full_error_msg);
+			free(full_error_msg);
+			exit(EXIT_FAILURE);
+		}
+	}
+	else
+		wait(&status);
+}
+
+/**
+ * get_env_path - gets the PATH.
+ * @command: user input command.
+ *
+ * Return: pointer to PATH.
+ */
+
+char *get_env_path(char *command)
+{
+	char *path = getenv("PATH");
+	char *token, *full_path;
+	char delimiter[] = ":";
+
+	token = strtok(path, delimiter);
+
+	while (token != NULL)
+	{
+		full_path = malloc(_strlen(token) + _strlen(command) + 2);
+		if (full_path == NULL)
+		{
+			perror("malloc");
+			exit(EXIT_FAILURE);
+		}
+		_strcpy(full_path, token);
+		_strcat(full_path, "/");
+		_strcat(full_path, command);
+
+		if (access(full_path, X_OK) == 0)
+		{
+			return (full_path);
+		}
+
+		free(full_path);
+		token = strtok(NULL, delimiter);
+	}
+	return (NULL);
+}
+#include "simple_shell.h"
+
+/**
+ * printCurrent_env_vars - prints the current environment variables.
+ *
+ */
+
+void printCurrent_env_vars(void)
+{
+	int i = 0;
+	char *env_var;
+	extern char **environ;
+
+	while (1)
+	{
+		if (environ != NULL)
+		{
+			env_var = environ[i];
+		}
+		if (env_var == NULL)
+			break;
+
+		write_to_stdout(env_var);
+		write_to_stdout("\n");
+		i++;
+	}
+}
+
+/**
+ * _strcmp - function that compares two strings.
+ *
+ * @s1: string 1.
+ * @s2: string 2.
+ *
+ * Return: 0.
+ */
+
+int _strcmp(char *s1, char *s2)
+{
+	int i = 0;
+
+	while (s1[i] != '\0' && s2[i] != '\0')
+	{
+		if (s1[i] != s2[i])
+		{
+			return (s1[i] - s2[i]);
+		}
+		i++;
+	}
+
+	return (0);
+}
+
+/**
+ * exit_shell - Exit the shell.
+ */
+void exit_shell(void)
+{
+	write_to_stdout("Exiting the shell...\n");
+	exit(0);
+}
+
+/**
+ * main - entry point.
+ *
+ * Return: Always 0.
+ */
+
+int main(void)
+{
+	char *input;
+
+	while (1)
+	{
+		write_to_stdout("kings_shell$$> ");
+		input = readUserInput();
+
+		if (input != NULL)
+		{
+			if (_strcmp(input, "exit") == 0)
+			{
+				free(input);
+				exit_shell();
+			}
+			else if (_strcmp(input, "env") == 0)
+			{
+				free(input);
+				printCurrent_env_vars();
+			}
+			else
+			{
+				run_user_command(input);
+				free(input);
+			}
+		}
+		else
+			exit_shell();
+	}
+	return (0);
+}

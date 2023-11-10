@@ -296,6 +296,7 @@ char *readUserInput()
 
 	return (userInput);
 }
+
 #include "simple_shell.h"
 
 /**
@@ -329,16 +330,20 @@ void run_user_command(char *input)
 	int status, i = 0;
 	pid_t pid;
 	char error_msg[] = "Command exited with error: ";
-	char *full_error_msg, *token = _strtok(input, " ");
+	char *full_error_msg, *token;
 	char *args[BUFFER_SIZE], *exec_path;
 
-	if (token == NULL)
-		return;
+	if (input != NULL)
+	{
+		token = _strtok(input, " ");
+		if (token == NULL)
+			return;
+	}
 
 	while (token != NULL && i < BUFFER_SIZE - 1)
 	{
 		args[i] = token;
-		token = strtok(NULL, " ");
+		token = _strtok(NULL, " ");
 		i++;
 	}
 	args[i] = NULL;
@@ -393,7 +398,7 @@ char *get_env_path(char *command)
 	char *token, *full_path;
 	char delimiter[] = ":";
 
-	token = strtok(path, delimiter);
+	token = _strtok(path, delimiter);
 
 	while (token != NULL)
 	{
@@ -413,10 +418,11 @@ char *get_env_path(char *command)
 		}
 
 		free(full_path);
-		token = strtok(NULL, delimiter);
+		token = _strtok(NULL, delimiter);
 	}
 	return (NULL);
 }
+
 #include "simple_shell.h"
 
 /**
